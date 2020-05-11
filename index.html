@@ -1,0 +1,288 @@
+<html>
+
+<head>
+
+	<meta name="author" content="Serdar Haytyyev">
+	<meta charset="utf-8" />
+	<meta name="robots" content="noindex" />
+	<meta http-equiv="cache-control" content="no-cache" />
+	<title>PO Balance App</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="css/bootstrap.min.css">
+	<script src="js/jquery.min.js"></script>
+	<script src="js/xlsx.full.min.js"></script>
+	<script>
+		$(document).ready(function () {
+			$("#results").hide();
+			$("#downloadButton").hide();
+			$("#printButton").hide();
+			$("#resetButton").hide();
+			$("#downloadButton").click(function (e) {
+				window.open('data:application/vnd.ms-excel,' + encodeURIComponent($('div[id$=results]').html()));
+				e.preventDefault();
+			});
+		});
+	</script>
+	<style>
+		body {
+			margin-top: 30pt;
+		}
+
+		#resultTable {
+
+			margin-top: 20pt;
+		}
+
+		#resultTable td {
+			font-family: Calibri;
+			font-size: 12pt;
+			border: 1px solid #595959;
+			border-collapse: collapse;
+			height: 20pt;
+		}
+
+		.headercells {
+			text-align: center;
+			padding-left: 0pt;
+			font-weight: bold;
+		}
+
+		.childCenter {
+			text-align: center;
+		}
+
+		.childLeft {
+			text-align: left;
+			padding-left: 10pt;
+		}
+
+		.childRight {
+			text-align: right;
+			padding-right: 10pt;
+		}
+
+		#header {
+			font-family: Calibri;
+		}
+
+		#fileUpload {
+			margin-top: 20pt;
+		}
+
+		#instructions {
+			margin-top: 20pt;
+			font-family: Calibri;
+			width: 660pt;
+		}
+
+		.btn {
+			margin: 0 5px;
+		}
+
+		@media print {
+			#downloadButton {
+				display: none;
+			}
+			#printButton {
+				display: none;
+			}
+			#resetButton {
+				display: none;
+			}
+		}
+
+		@page {
+			margin: 10mm 15mm 10mm 15mm;
+			size: auto;
+			margin-bottom: 5mm;
+		}
+	</style>
+</head>
+
+<body>
+	<center>
+		<div id="header">
+			<h2>PO Balance Report</h2>
+			<button type="button" id="resetButton" class="btn btn-danger" onClick="location.reload()">
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			</button>
+			<button type="button" id="printButton" class="btn btn-primary" onClick="window.print()">
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Print&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			</button>
+			<button type="button" id="downloadButton" class="btn btn-success">
+				Download to Excel
+			</button>
+		</div>
+		<div id="fileUpload" class="">
+			<span class="btn btn-primary">
+				<input type="file" name="xlfile" id="xlf" />
+			</span>
+		</div>
+		<div id="instructions">
+			<h4>Get Purchase Order History report from JR3 and upload here. Below are the instruction how to get this report.</h4>
+			<img class="" style="margin-top: 10pt;" src="./instruction_1.JPG" alt="">
+			<br>
+			<img class="img-responsive" style="margin-top: 10pt;" src="./instruction_2.JPG" alt="">
+		</div>
+		<div id="results">
+			<table id="resultTable">
+				<tbody>
+					<tr>
+						<td class="headercells" style="width: 90pt;">
+							<strong>PO Number</strong>
+						</td>
+						<td class="headercells" style="width: 160pt">
+							<strong>Account Code</strong>
+						</td>
+						<td class="headercells" style="width: 80pt">
+							<strong>Encumbered</strong>
+						</td>
+						<td class="headercells" style="width: 80pt">
+							<strong>Remaining</strong>
+						</td>
+						<td class="headercells" style="width: 280pt">
+							<strong>Vendor</strong>
+						</td>
+						<td class="headercells" style="width: 150pt">
+							<strong>Requestor</strong>
+						</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td class="headercells">
+							<strong>Total:</strong>
+						</td>
+						<td class="headercells" id="totalEncumbered"></td>
+						<td class="headercells" id="totalRemaining"></td>
+						<td class="headercells" style="width: 280pt"></td>
+						<td class="headercells"></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="container" id="disclaimer">
+			<table>
+				<tr>
+					<td style="text-align: center; height: 20pt; font-family: Calibri; font-size: 10pt; color: dimgray; padding-top: 30pt; padding-bottom: 30pt;">
+						Designed by Serdar Haytyyev.
+						<br />Contact serdarh@gmail.com for support.						
+					</td>
+				</tr>
+			</table>
+		</div>
+	</center>
+	<script type="text/javascript" src="js/shim.js"></script>
+	<script>
+		function handleFile(e) {
+			var files = e.target.files;
+			var i, j, f;
+			for (i = 0; i != files.length; ++i) {
+				f = files[i];
+				var reader = new FileReader();
+				var name = f.name;
+				reader.onload = function (e) {
+					var data = e.target.result;
+					var workbook = XLSX.read(data, { type: 'binary' });
+
+					/* DO SOMETHING WITH workbook HERE */
+					var first_sheet_name = workbook.SheetNames[0];
+					/* Get worksheet */
+					var worksheet = workbook.Sheets[first_sheet_name];
+					var newArr = XLSX.utils.sheet_to_json(worksheet);
+
+					for (i = 0; i < newArr.length; i++) {
+						newArr[i].RemainingAmount = parseFloat(newArr[i].RemainingAmount);
+						newArr[i].ReceivedAmount = parseFloat(newArr[i].ReceivedAmount);
+						newArr[i].EncumberedAmount = parseFloat(newArr[i].EncumberedAmount);
+						newArr[i].RemainingAmount = newArr[i].EncumberedAmount - newArr[i].ReceivedAmount;
+					}
+
+					var poList = [];
+					var totalEncumbered = 0;
+					var totalRemaining = 0;
+					
+					// Sort newArr by PONumber first and then AccountCode
+					newArr.sort(function (a, b) {
+						if (a.PONumber === b.PONumber) {
+							return (a.AccountCode > b.AccountCode) ? -1 : ((b.AccountCode > a.AccountCode) ? 1 : 0);
+						}
+						return (a.PONumber > b.PONumber) ? -1: (b.PONumber > a.PONumber) ? 1 : 0;
+					});
+
+					// Add first unfulfilled row to poList array
+					for (i = 0; i < newArr.length; i++) {
+						if (newArr[i].POStatus !== 'Fulfilled' && newArr[i].RemainingAmount != 0) {
+							newArr[i].Fund = newArr[i].AccountCode.substring(0, 3);
+							delete newArr[i].PODate;
+							// delete newArr[i].Requestor;
+							delete newArr[i].LiquidatedAmount;
+							delete newArr[i].LedgerAmount;
+							delete newArr[i].PayableReference;
+							delete newArr[i].PayableDate;
+							delete newArr[i].PaymentReference;
+							delete newArr[i].InvoicedAmount;
+							poList.push(newArr[i]);
+							totalEncumbered += newArr[i].EncumberedAmount;
+							totalRemaining += newArr[i].RemainingAmount;
+							break;
+						}
+					}
+
+					// Add all unfulfilled  and unique non-zero rows to poList array
+					for (j = i + 1; j < newArr.length; j++) {
+						if ((newArr[j].AccountCode !== newArr[j - 1].AccountCode || newArr[j].PONumber !== newArr[j - 1].PONumber) && newArr[j].POStatus !== "Fulfilled" && newArr[j].RemainingAmount != 0) {
+							newArr[j].Fund = newArr[j].AccountCode.substring(0, 3);
+							delete newArr[j].PODate;
+							// delete newArr[j].Requestor;
+							delete newArr[j].LiquidatedAmount;
+							delete newArr[j].LedgerAmount;
+							delete newArr[j].PayableReference;
+							delete newArr[j].PayableDate;
+							delete newArr[j].PaymentReference;
+							delete newArr[j].InvoicedAmount;
+							poList.push(newArr[j]);
+							totalEncumbered += newArr[j].EncumberedAmount;
+							totalRemaining += newArr[j].RemainingAmount;
+						}
+					}
+					
+
+					// Sort poList by fund first and then remaining amounts
+					poList.sort(function (a, b) {
+						if (a.Fund === b.Fund) {
+							return (a.RemainingAmount > b.RemainingAmount) ? -1 : ((b.RemainingAmount > a.RemainingAmount) ? 1 : 0);
+						}
+						return a.Fund - b.Fund;
+					});
+
+					var colorToggle = true;
+
+					for (i = 0; i < poList.length; i++) {
+						if (i != 0 && poList[i].Fund !== poList[i - 1].Fund) { colorToggle = !colorToggle; }
+
+						if (colorToggle) { poList[i].color = "#ecf4fd"; }
+						else { poList[i].color = "#fffeda"; }
+
+						$('#resultTable > tbody:last-child').append('<tr style=\"background-color:' + poList[i].color + '\"><td class="childCenter">' + poList[i].PONumber + '</td>' + '<td class="childCenter">' + poList[i].AccountCode + '</td>' +
+							'<td class="childRight">' + "&#36;" + poList[i].EncumberedAmount.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,') + '</td>' + '<td class="childRight">' +
+							"&#36;" + poList[i].RemainingAmount.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,') + '</td>' + '<td class="childLeft">' + poList[i].Vendor + '</td>' +
+							'<td class="childLeft">' + poList[i].Requestor + '</td>' + '</tr>');
+					}
+					jQuery('#totalEncumbered').html("&#36;" + totalEncumbered.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,'));
+					jQuery('#totalRemaining').html("&#36;" + totalRemaining.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,'));
+				};
+				reader.readAsBinaryString(f);
+			}
+			$("#fileUpload").fadeOut(1000);
+			$("#instructions").fadeOut(1000);
+			$("#results").fadeIn(1000);
+			$("#printButton").fadeIn(1000);
+			$("#downloadButton").fadeIn(1000);
+			$("#resetButton").fadeIn(1000);
+		}
+		xlf.addEventListener('change', handleFile, false);
+	</script>
+	<script src="js/bootstrap.min.js"></script>
+</body>
+
+</html>
